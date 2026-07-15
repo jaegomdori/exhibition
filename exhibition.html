@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>우수 보고서 · 동아리 전시 배너</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --arrow-bg:rgba(0,0,0,.45); --arrow-bg-hover:rgba(0,0,0,.75); --arrow-color:#fff;
+    --dot:rgba(255,255,255,.5); --dot-active:#fff;
+    --radius:14px; --gap:14px;
+    --ratio:42%;              /* 배너 높이 비율. 이미지가 잘리면 값을 키우세요(예: 56%) */
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  .banner{position:relative;width:100%;background:var(--bg);border-radius:var(--radius);overflow:hidden;user-select:none;font-family:system-ui,-apple-system,"Malgun Gothic",sans-serif;}
+  .viewport{position:relative;width:100%;padding-top:var(--ratio);}
+  .track{position:absolute;inset:0;}
+  .slide{position:absolute;inset:0;opacity:0;pointer-events:none;transition:opacity .6s ease;}
+  .slide.active{opacity:1;pointer-events:auto;}
+  .card{display:block;width:100%;height:100%;text-decoration:none;color:inherit;position:relative;cursor:pointer;}
+  .card img{width:100%;height:100%;object-fit:cover;display:block;}
+  .nav{position:absolute;top:50%;transform:translateY(-50%);width:44px;height:44px;border:none;cursor:pointer;background:var(--arrow-bg);color:var(--arrow-color);border-radius:50%;font-size:22px;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:3;}
+  .nav:hover{background:var(--arrow-bg-hover);}
+  .prev{left:var(--gap);} .next{right:var(--gap);}
+  .dots{position:absolute;left:0;right:0;bottom:var(--gap);display:flex;justify-content:center;gap:8px;z-index:3;}
+  .dot{width:9px;height:9px;border-radius:50%;border:none;background:var(--dot);cursor:pointer;padding:0;transition:transform .2s,background .2s;}
+  .dot.active{background:var(--dot-active);transform:scale(1.25);}
+</style>
+</head>
+<body>
+
+<div class="banner" id="banner">
+  <div class="viewport"><div class="track" id="track"></div></div>
+  <button class="nav prev" id="prev" aria-label="이전">&#10094;</button>
+  <button class="nav next" id="next" aria-label="다음">&#10095;</button>
+  <div class="dots" id="dots"></div>
+</div>
+
+<script>
+  /* ============================================================
+     ★ 전시 작품 추가/수정은 여기 CARDS 목록만 손대면 됩니다 ★
+       { img:"표지파일", link:"노션주소" }
+     - 표지 이미지에 이미 제목이 들어 있으므로 title은 비워둡니다.
+     - link는 각 작품의 노션 페이지 주소로 교체하세요(지금은 임시 "#").
+     ------------------------------------------------------------ */
+  const CARDS = [
+    { img:"e1.png",  link:"#", title:"" },   // 우수보고서 학생 A · AMPK 혈당조절 신약
+    { img:"e2.png",  link:"#", title:"" },   // 우수보고서 학생 B · LDL 콜레스테롤 복합제
+    { img:"e3.png",  link:"#", title:"" },   // 우수보고서 학생 C · 부정맥 이중작용 복합제
+    { img:"e4.png",  link:"#", title:"" },   // 우수보고서 학생 D · 종양 미세환경·면역 보조제
+    { img:"e5.png",  link:"#", title:"" },   // 동아리 · DNA 추출
+    { img:"e6.png",  link:"#", title:"" },   // 동아리 · DPPH 항산화
+    { img:"e7.png",  link:"#", title:"" },   // 동아리 · 바소체 관찰
+    { img:"e8.png",  link:"#", title:"" },   // 동아리 · 브래드포드 정량
+    { img:"e9.png",  link:"#", title:"" },   // 동아리 · 캘러스 배양
+    { img:"e10.png", link:"#", title:"" },   // 동아리 · 키틴 분석
+  ];
+
+  const INTERVAL_MS = 5000;   // ← 자동 넘김 속도(ms). 5000 = 5초
+  const OPEN_NEW_TAB = true;  // ← true면 클릭 시 새 탭에서 열림
+  /* ============================================================ */
+
+  const track = document.getElementById('track');
+  const dotsBox = document.getElementById('dots');
+  let index = 0, timer = null;
+  const N = CARDS.length;
+
+  CARDS.forEach((c, i) => {
+    const s = document.createElement('div'); s.className = 'slide';
+    const a = document.createElement('a'); a.className = 'card';
+    a.href = c.link || '#';
+    if (OPEN_NEW_TAB && c.link && c.link !== '#') { a.target = '_blank'; a.rel = 'noopener'; }
+    const img = document.createElement('img'); img.src = c.img; img.alt = c.title || ('작품 ' + (i+1));
+    a.appendChild(img);
+    s.appendChild(a); track.appendChild(s);
+    const d = document.createElement('button'); d.className = 'dot';
+    d.addEventListener('click', () => { go(i); restart(); });
+    dotsBox.appendChild(d);
+  });
+
+  const slides = track.querySelectorAll('.slide');
+  const dots = dotsBox.querySelectorAll('.dot');
+  function render(){
+    slides.forEach((s,i)=> s.classList.toggle('active', i===index));
+    dots.forEach((d,i)=> d.classList.toggle('active', i===index));
+  }
+  function go(i){ index = (i + N) % N; render(); }
+  function next(){ go(index+1); }
+  function prev(){ go(index-1); }
+  function start(){ stop(); timer = setInterval(next, INTERVAL_MS); }
+  function stop(){ if(timer){ clearInterval(timer); timer = null; } }
+  function restart(){ start(); }
+
+  document.getElementById('next').addEventListener('click', ()=>{ next(); restart(); });
+  document.getElementById('prev').addEventListener('click', ()=>{ prev(); restart(); });
+  document.addEventListener('keydown', e=>{
+    if(e.key==='ArrowRight'){ next(); restart(); }
+    if(e.key==='ArrowLeft'){ prev(); restart(); }
+  });
+  const banner = document.getElementById('banner');
+  banner.addEventListener('mouseenter', stop);
+  banner.addEventListener('mouseleave', start);
+  document.addEventListener('visibilitychange', ()=>{ document.hidden ? stop() : start(); });
+  let startX = null;
+  banner.addEventListener('touchstart', e=>{ startX = e.touches[0].clientX; }, {passive:true});
+  banner.addEventListener('touchend', e=>{
+    if(startX===null) return;
+    const dx = e.changedTouches[0].clientX - startX;
+    if(Math.abs(dx) > 40){ dx < 0 ? next() : prev(); restart(); }
+    startX = null;
+  }, {passive:true});
+
+  render(); start();
+</script>
+</body>
+</html>
